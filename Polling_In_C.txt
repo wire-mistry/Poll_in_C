@@ -1,0 +1,53 @@
+//There are multiple ways of Polling in C- Linux supported APIs
+//Poll,epoll,select 
+//We Will have a look @ a way of polling 
+
+
+//Standars Includes
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+
+//Inlcude to support Polling
+// This fucntion is majorly written for sockets
+#include <poll.h>
+
+
+// Structure to be initialize for  Polling <Man Poll>
+// Currently we ll discuss about INPUT and OUTPUT for more refer Man Page
+// This Structure pollfd has three members fd ,events and revents
+// fd - File descriptors on which event/s has/have to be managed 
+// events - A bit mask specifying the events the application is interested in for the file descriptor fd. If this field is specified as zero, then all events are ignored for fd and revents returns zero. for OUTPUT -> POLLOUT for INPUT - POLLIN for others refer MAN page
+//revents - this returns the expected value,The field revents is an output parameter, filled by the kernel with the events  that  actually  occurred.   The  bits  returned  in revents can include any of those specified in events, or one of the values POLLERR,POLLHUP,  or POLLNVAL.  (These three bits are meaningless in the events field, and will be set in the revents field whenever the  corresponding condition is true.)
+
+struct pollfd eventStruct = {0};
+//if we want multiple file descriptors to be polled then it could be eventStruct[NO_OF_FDs]= {0}
+
+
+//This example does poling on availability of data over command line terminal hence fd is having stdin file no 
+void initPollStruct()
+{
+	//assigining the event file descriptor to stdin
+	//if we want multiple file descriptors to be polled then each array element will have a different FD  such as eventStruct[0].fd = fileno(stdin);  eventStruct[1].fd = fileno(stdout);eventStruct[1].events = POLLOUT; //for polling on output readiness
+	
+	eventStruct.fd = fileno(stdin);//macro STDIN_FILENO can be directly used in this case
+	eventStruct.events = POLLIN;
+}
+
+// this is wrapper function to wait for event
+int PollForQuitFromUser()
+{
+		char buff[8] = {0};
+		int retval = poll(&eventStruct,1,5);
+		
+	if((eventStruct.revents & POLLIN) && retval)// if poll returns successfull and revent is saying that POLLIN is successful i.e. data is available
+	{
+		//if event occurs then stdin is ready with data and read the data,  
+		fgets(buff,sizeof(buff),stdin);
+		if(strstr(buff,"Quit"))// this logic is for if user enters the Quit from terminal exit the applications
+			return 1;
+	}
+	return 0;
+}
